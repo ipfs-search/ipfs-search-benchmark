@@ -3,16 +3,15 @@ const fs = require("fs"),
   readline = require("readline");
 
 const visitDurationMillis = 300 * 1000;
-const logFile = "access.log";
 const ignored_paths = ["/v1/queue-pinservice/pins", "/server_status"];
-const ignored_status = [400, 400];
+const ignored_status = [301, 400, 400];
 const dataFile = "batches.json";
 
-async function getRemotes(fileStream) {
+async function getRemotes() {
   console.log("Parsing log, sort remotes.");
 
   const rl = readline.createInterface({
-    input: fileStream,
+    input: process.stdin,
     crlfDelay: Infinity,
   });
 
@@ -54,7 +53,6 @@ async function getRemotes(fileStream) {
   }
 
   rl.close();
-  fileStream.close();
 
   return remotes;
 }
@@ -112,8 +110,7 @@ async function printBatches(visits) {
   process.exit();
 }
 
-const fileStream = fs.createReadStream(logFile);
-const remotes = getRemotes(fileStream);
+const remotes = getRemotes();
 const visits = getVisits(remotes);
 const batches = visitsToBatches(visits);
 writeBatches(batches);
