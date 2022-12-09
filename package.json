@@ -2,7 +2,7 @@
   "name": "ipfs-search-benchmark",
   "version": "0.1.0",
   "description": "k6s load generator for api.ipfs-search.com based on real user traffic.",
-  "main": "logtovisits.js",
+  "main": "logtobatches.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

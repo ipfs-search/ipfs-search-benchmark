@@ -5,7 +5,8 @@ const fs = require("fs"),
 const visitDurationMillis = 300 * 1000;
 const logFile = "access.log";
 const ignored_paths = ["/v1/queue-pinservice/pins", "/server_status"];
-const dataFile = "visits.json";
+const ignored_status = [400, 400];
+const dataFile = "batches.json";
 
 async function getRemotes(fileStream) {
   console.log("Parsing log, sort remotes.");
@@ -20,7 +21,11 @@ async function getRemotes(fileStream) {
   for await (const line of rl) {
     const parsed = parse(line);
 
-    if (ignored_paths.includes(parsed.path)) {
+    // Filter out ignored stuff.
+    if (
+      ignored_paths.includes(parsed.path) ||
+      ignored_status.includes(parsed.status)
+    ) {
       continue;
     }
 
@@ -65,12 +70,42 @@ async function getVisits(remotes) {
   return visits;
 }
 
-async function writeVisits(visits) {
-  // Write visits to JSON data file.
+function visitToBatches(visit) {
+  var previous_time = visit[0].time_local;
+
+  const batches = [];
+  for (const request of visit) {
+    const time_since_previous = Math.abs(request.time_local - previous_time);
+    previous_time = request.time_local;
+
+    if (batches.length > 0 && time_since_previous === 0) {
+      // Append to last batch
+      batches[batches.length - 1].paths.push(request.path);
+    } else {
+      // Create new batch
+      if (!request.path) {
+        console.error(request);
+      }
+      batches.push({
+        paths: [request.path],
+        seconds_before: time_since_previous / 1000,
+      });
+    }
+  }
+
+  return batches;
+}
+
+async function visitsToBatches(visits) {
+  return (await visits).map(visitToBatches);
+}
+
+async function writeBatches(visits) {
+  // Write to JSON data file.
   fs.writeFileSync(dataFile, JSON.stringify(await visits, null, 2), "utf8");
 }
 
-async function printVisits(visits) {
+async function printBatches(visits) {
   const v = await visits;
   console.log(`Found ${v.length} visits.`);
 
@@ -80,5 +115,6 @@ async function printVisits(visits) {
 const fileStream = fs.createReadStream(logFile);
 const remotes = getRemotes(fileStream);
 const visits = getVisits(remotes);
-writeVisits(visits);
-printVisits(visits);
+const batches = visitsToBatches(visits);
+writeBatches(batches);
+printBatches(batches);
