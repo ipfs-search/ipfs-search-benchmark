@@ -10,6 +10,8 @@ const rd = readline.createInterface({
 
 const visitDurationMillis = 300 * 1000;
 
+const ignored_paths = ["/v1/queue-pinservice/pins", "/server_status"];
+
 async function getRemotes(fileStream) {
   console.log("Parsing log, sort remotes.");
 
@@ -22,6 +24,10 @@ async function getRemotes(fileStream) {
   var count = 0;
   for await (const line of rl) {
     const parsed = parse(line);
+
+    if (ignored_paths.includes(parsed.path)) {
+      continue;
+    }
 
     if (!(parsed.remote_addr in remotes)) {
       // New remote, new visit
@@ -58,9 +64,7 @@ async function getVisits(remotes) {
   const visits = [];
 
   for (const [key, value] of Object.entries(await remotes)) {
-    for (const visit of value) {
-      visits.push(...visit);
-    }
+    visits.push(...value);
   }
 
   return visits;
@@ -69,6 +73,8 @@ async function getVisits(remotes) {
 async function printVisits(visits) {
   const v = await visits;
   console.log(v[0]);
+  console.log(v[0][0]);
+  console.log(`Found ${v.length} visits.`);
 
   process.exit();
 }
