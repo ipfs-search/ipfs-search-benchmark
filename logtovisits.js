@@ -2,15 +2,10 @@ const fs = require("fs"),
   parse = require("clf-parser"),
   readline = require("readline");
 
-const rd = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  console: false,
-});
-
 const visitDurationMillis = 300 * 1000;
-
+const logFile = "access.log";
 const ignored_paths = ["/v1/queue-pinservice/pins", "/server_status"];
+const dataFile = "visits.json";
 
 async function getRemotes(fileStream) {
   console.log("Parsing log, sort remotes.");
@@ -70,18 +65,20 @@ async function getVisits(remotes) {
   return visits;
 }
 
+async function writeVisits(visits) {
+  // Write visits to JSON data file.
+  fs.writeFileSync(dataFile, JSON.stringify(await visits, null, 2), "utf8");
+}
+
 async function printVisits(visits) {
   const v = await visits;
-  console.log(v[0]);
-  console.log(v[0][0]);
   console.log(`Found ${v.length} visits.`);
 
   process.exit();
 }
 
-const logFile = "access.log";
-
 const fileStream = fs.createReadStream(logFile);
 const remotes = getRemotes(fileStream);
 const visits = getVisits(remotes);
+writeVisits(visits);
 printVisits(visits);
