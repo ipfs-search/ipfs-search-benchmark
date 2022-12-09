@@ -10,7 +10,7 @@ const rd = readline.createInterface({
 
 const visitDurationMillis = 300 * 1000;
 
-async function getVisits(fileStream) {
+async function getRemotes(fileStream) {
   console.log("Parsing log, sort remotes.");
 
   const rl = readline.createInterface({
@@ -53,11 +53,22 @@ async function getVisits(fileStream) {
   return remotes;
 }
 
+async function getVisits(remotes) {
+  // Pile remotes together, yielding just visits.
+  const visits = [];
+
+  for (const [key, value] of Object.entries(await remotes)) {
+    for (const visit of value) {
+      visits.push(...visit);
+    }
+  }
+
+  return visits;
+}
+
 async function printVisits(visits) {
   const v = await visits;
-  for (const key in v) {
-    console.log(key, v[key]);
-  }
+  console.log(v[0]);
 
   process.exit();
 }
@@ -65,5 +76,6 @@ async function printVisits(visits) {
 const logFile = "access.log";
 
 const fileStream = fs.createReadStream(logFile);
-const visits = getVisits(fileStream);
+const remotes = getRemotes(fileStream);
+const visits = getVisits(remotes);
 printVisits(visits);
