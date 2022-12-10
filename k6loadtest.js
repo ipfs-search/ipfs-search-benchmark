@@ -26,14 +26,13 @@ const batches = new SharedArray("batches", function () {
 });
 
 export const options = {
-  // stages: [
-  //   { duration: "5m", target: 100 }, // simulate ramp-up of traffic from 1 to 100 users over 5 minutes.
-  //   { duration: "10m", target: 100 }, // stay at 100 users for 10 minutes
-  //   { duration: "5m", target: 0 }, // ramp-down to 0 users
-  // ],
-  vus: 400,
-  duration: "2m",
-  gracefulStop: "1m",
+  stages: [
+    { duration: "5m", target: 400 }, // simulate ramp-up of traffic from 1 to 400 users over 5 minutes.
+    { duration: "10m", target: 400 }, // stay at 400 users for 10 minutes
+    { duration: "5m", target: 0 }, // ramp-down to 0 users
+  ],
+  // vus: 400,
+  // duration: "2m",
   // TODO: Whitelist request limiting in frontend server
   rps: 200,
   thresholds: {
