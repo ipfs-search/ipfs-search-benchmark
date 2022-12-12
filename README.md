@@ -1,6 +1,36 @@
 # ipfs-search-benchmark
 
-## Results
+This extracts real-life traffic from webserver logs to generate realistic load tests for ipfs-search.com (including pauses), such that every virtual user (VU) emulates an actual visit to our site.
+The VU's emulates the exact user behaviour, including batching of requests and pauses between them.
+
+Please see `logto-batches.js` to see how we extract traffic from log files.
+
+## Usage
+
+### Creating `visits.json` dataset from log files
+
+Only required if you don't want to use the supplied `visits.json`.
+
+1. Install node deps: `npm i`
+2. Pipe log data to `logtobatches.js`: `cat access.log | node logtobatches.js`
+   Or, if (like us) you have a large body of gzipped log data: `gzcat access.log.*.gz | node`
+
+The extraction is known to work well to about 15k visits (including batched requests).
+
+### Running load tests
+
+Please make sure you have a wide-enough pipe. Currently, this generates ~5 MB/s (~50 Mbit) of traffic.
+
+1. [Install k6](https://k6.io/docs/get-started/installation/)
+2. Extract visits file: `bunzip2 visits.json.bz2`
+3. Run load tests: `k6 run k6loadtest.js`
+
+#### Offset to ensure cache' coldness
+
+You can use the `SCENARIO_OFFSET` environment variable to prevent using the same traffic in repeated tests.
+For example, if a first test ran 1999 iterations, specify an offset like such: `SCENARIO_OFFSET=2000 k6 run k6loadtest.js`
+
+## Preliminary results
 
 ### 30s quick test
 
@@ -120,6 +150,58 @@
      iteration_duration.............: avg=18.47s   min=10.04s  med=13.95s   max=59.16s   p(90)=33.17s p(95)=47.77s
      iterations.....................: 483    8.049025/s
      vus............................: 181    min=181      max=400
+     vus_max........................: 400    min=400      max=400
+```
+
+With new bogus traffic, warm cache.
+
+```
+     ✗ is status 200
+      ↳  93% — ✓ 75369 / ✗ 5475
+
+   ✓ checks.........................: 93.22% ✓ 75369      ✗ 5475
+     data_received..................: 224 MB 355 kB/s
+     data_sent......................: 13 MB  21 kB/s
+     dropped_iterations.............: 11368  18.04416/s
+     http_req_blocked...............: avg=24.37ms  min=0s       med=1µs     max=13.43s   p(90)=1µs      p(95)=2µs
+     http_req_connecting............: avg=22.77ms  min=0s       med=0s      max=13.07s   p(90)=0s       p(95)=0s
+   ✓ http_req_duration..............: avg=654.74ms min=44.06ms  med=62.12ms max=1m0s     p(90)=297.69ms p(95)=682.37ms
+       { expected_response:true }...: avg=194.81ms min=44.06ms  med=61.02ms max=59.79s   p(90)=213.33ms p(95)=394.46ms
+   ✓ http_req_failed................: 7.11%  ✓ 5796       ✗ 75672
+     http_req_receiving.............: avg=6.36ms   min=0s       med=62µs    max=58.25s   p(90)=361µs    p(95)=4.39ms
+     http_req_sending...............: avg=75.54µs  min=18µs     med=56µs    max=9.79ms   p(90)=142µs    p(95)=176µs
+     http_req_tls_handshaking.......: avg=1.46ms   min=0s       med=0s      max=818.85ms p(90)=0s       p(95)=0s
+     http_req_waiting...............: avg=648.3ms  min=40.82ms  med=61.64ms max=1m0s     p(90)=278.97ms p(95)=652.2ms
+     http_reqs......................: 81468  129.312249/s
+     iteration_duration.............: avg=1m25s    min=166.44ms med=48.8s   max=10m27s   p(90)=3m38s    p(95)=5m4s
+     iterations.....................: 1990   3.15868/s
+     vus............................: 329    min=329      max=400
+     vus_max........................: 400    min=400      max=400
+```
+
+Cold cache (while servers overloaded).
+
+```
+     ✗ is status 200
+      ↳  51% — ✓ 43512 / ✗ 40556
+
+   ✗ checks.........................: 51.75% ✓ 43512      ✗ 40556
+     data_received..................: 131 MB 207 kB/s
+     data_sent......................: 13 MB  21 kB/s
+     dropped_iterations.............: 11400  18.09501/s
+     http_req_blocked...............: avg=12.54ms  min=0s       med=1µs     max=8.43s    p(90)=1µs      p(95)=2µs
+     http_req_connecting............: avg=9.86ms   min=0s       med=0s      max=7.98s    p(90)=0s       p(95)=0s
+   ✓ http_req_duration..............: avg=696.24ms min=44.01ms  med=61.67ms max=1m0s     p(90)=307.66ms p(95)=929.56ms
+       { expected_response:true }...: avg=59.03ms  min=44.01ms  med=46ms    max=3.08s    p(90)=90.49ms  p(95)=134.63ms
+   ✗ http_req_failed................: 48.17% ✓ 40733      ✗ 43816
+     http_req_receiving.............: avg=61.94ms  min=0s       med=69µs    max=59.92s   p(90)=7.02ms   p(95)=25.12ms
+     http_req_sending...............: avg=79.1µs   min=16µs     med=58µs    max=185.45ms p(90)=143µs    p(95)=171µs
+     http_req_tls_handshaking.......: avg=2.67ms   min=0s       med=0s      max=3.86s    p(90)=0s       p(95)=0s
+     http_req_waiting...............: avg=634.21ms min=43.94ms  med=60.65ms max=1m0s     p(90)=270.84ms p(95)=816.59ms
+     http_reqs......................: 84549  134.203067/s
+     iteration_duration.............: avg=1m26s    min=369.32ms med=50.03s  max=10m26s   p(90)=3m45s    p(95)=4m58s
+     iterations.....................: 1950   3.095199/s
+     vus............................: 336    min=336      max=400
      vus_max........................: 400    min=400      max=400
 ```
 
