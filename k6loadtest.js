@@ -1,28 +1,21 @@
 import { SharedArray } from "k6/data";
 import { sleep, check } from "k6";
 import http from "k6/http";
-import { randomSeed } from "k6";
 import { scenario } from "k6/execution";
 
-randomSeed(34234234);
+const offset = __ENV.SCENARIO_OFFSET ? parseInt(__ENV.SCENARIO_OFFSET) : 0;
 
 const urlPrefix = "https://api.ipfs-search.com";
 const sleepAfter = 60;
 
-const batches = new SharedArray("batches", function () {
+const visits = new SharedArray("visits", function () {
   // All heavy work (opening and processing big files for example) should be done inside here.
   // This way it will happen only once and the result will be shared between all VUs, saving time and memory.
-  const f = JSON.parse(open("./batches.json"));
+  const f = JSON.parse(open("./visits.json"));
 
-  console.log("Read batches:", f.length);
+  console.log("Read visits:", f.length);
 
-  // Shuffle array
-  const shuffled = f
-    .map((value) => ({ value, sort: Math.random() }))
-    .sort((a, b) => a.sort - b.sort)
-    .map(({ value }) => value);
-
-  return shuffled;
+  return f;
 });
 
 export const options = {
@@ -34,13 +27,13 @@ export const options = {
     http_req_failed: ["rate<0.1"],
     http_req_duration: ["p(90)<1000"],
   },
-  iterations: batches.length,
+  iterations: visits.length,
   discardResponseBodies: true,
 };
 
 export default function () {
   // Pick a new batch for every iteration.
-  const visit = batches[scenario.iterationInTest];
+  const visit = visits[scenario.iterationInTest + offset];
 
   for (const batch of visit) {
     sleep(batch.seconds_before);

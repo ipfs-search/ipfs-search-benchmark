@@ -2,10 +2,12 @@ const fs = require("fs"),
   parse = require("clf-parser"),
   readline = require("readline");
 
-const visitDurationMillis = 300 * 1000;
-const ignored_paths = ["/v1/queue-pinservice/pins", "/server_status"];
-const ignored_status = [301, 400, 400];
-const dataFile = "batches.json";
+const visitDurationMillis = 300 * 1000; // 5 min of no traffic signifies a new visit.
+const ignored_paths = ["/v1/queue-pinservice/pins", "/server_status"]; // Paths we're not testing for.
+const ignored_status = [301, 400, 404]; // This won't actully hit our backend.
+const ignored_remotes = ["130.245.145.0", "148.71.182.0"]; // Skip known bots.
+const max_visit_steps = 256; // Reduce oversized batches; reduces crawlers.
+const dataFile = "visits.json";
 
 async function getRemotes() {
   console.log("Parsing log, sort remotes.");
@@ -23,7 +25,8 @@ async function getRemotes() {
     // Filter out ignored stuff.
     if (
       ignored_paths.includes(parsed.path) ||
-      ignored_status.includes(parsed.status)
+      ignored_status.includes(parsed.status) ||
+      ignored_remotes.includes(parsed.remote_addr)
     ) {
       continue;
     }
@@ -57,14 +60,15 @@ async function getRemotes() {
   return remotes;
 }
 
-async function getVisits(remotes) {
+function getVisits(remotes) {
   // Pile remotes together, yielding just visits.
   const visits = [];
 
-  for (const [key, value] of Object.entries(await remotes)) {
+  for (const [key, value] of Object.entries(remotes)) {
     visits.push(...value);
   }
 
+  console.log(`Found ${visits.length} visits.`);
   return visits;
 }
 
@@ -94,24 +98,45 @@ function visitToBatches(visit) {
   return batches;
 }
 
-async function visitsToBatches(visits) {
-  return (await visits).map(visitToBatches);
+function visitsToBatches(visits) {
+  let batchCount = 0;
+
+  const batchedVisits = visits.map((visit) => {
+    batches = visitToBatches(visit);
+    batchCount += batches.length;
+    return batches;
+  });
+
+  console.log(`Grouped ${batchCount} batches.`);
+  return batchedVisits;
 }
 
-async function writeBatches(visits) {
-  // Write to JSON data file.
-  fs.writeFileSync(dataFile, JSON.stringify(await visits, null, 2), "utf8");
+function filterOverlySizedVisits(visits) {
+  const filtered = visits.filter((visit) => visit.length < max_visit_steps);
+  console.log(
+    `Removed ${visits.length - filtered.length} overly sized visits.`
+  );
+  return filtered;
 }
 
-async function printBatches(visits) {
-  const v = await visits;
-  console.log(`Found ${v.length} visits.`);
+function shuffleArray(a) {
+  console.log("Shuffling visits.");
+
+  return a
+    .map((value) => ({ value, sort: Math.random() }))
+    .sort((a, b) => a.sort - b.sort)
+    .map(({ value }) => value);
+}
+
+async function main() {
+  const visits = shuffleArray(
+    filterOverlySizedVisits(visitsToBatches(getVisits(await getRemotes())))
+  );
+
+  console.log(`Writing visits to ${dataFile}.`);
+  fs.writeFileSync(dataFile, JSON.stringify(visits, null, 2), "utf8");
 
   process.exit();
 }
 
-const remotes = getRemotes();
-const visits = getVisits(remotes);
-const batches = visitsToBatches(visits);
-writeBatches(batches);
-printBatches(batches);
+main();
