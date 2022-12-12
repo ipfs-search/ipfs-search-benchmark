@@ -7,7 +7,7 @@ import { scenario } from "k6/execution";
 randomSeed(34234234);
 
 const urlPrefix = "https://api.ipfs-search.com";
-const sleepAfter = 10;
+const sleepAfter = 60;
 
 const batches = new SharedArray("batches", function () {
   // All heavy work (opening and processing big files for example) should be done inside here.
@@ -26,22 +26,16 @@ const batches = new SharedArray("batches", function () {
 });
 
 export const options = {
-  stages: [
-    { duration: "5m", target: 400 }, // simulate ramp-up of traffic from 1 to 400 users over 5 minutes.
-    { duration: "10m", target: 400 }, // stay at 400 users for 10 minutes
-    { duration: "5m", target: 0 }, // ramp-down to 0 users
-  ],
-  // vus: 400,
-  // duration: "2m",
+  vus: 400,
   // TODO: Whitelist request limiting in frontend server
-  rps: 200,
+  // rps: 200,
   thresholds: {
     checks: ["rate>0.9"],
     http_req_failed: ["rate<0.1"],
-    http_req_duration: ["p(90)<500"],
+    http_req_duration: ["p(90)<1000"],
   },
   iterations: batches.length,
-  // discardResponseBodies: true,
+  discardResponseBodies: true,
 };
 
 export default function () {
@@ -72,5 +66,5 @@ export default function () {
     }
   }
 
-  sleep(sleepAfter);
+  sleep(sleepAfter * Math.random());
 }
