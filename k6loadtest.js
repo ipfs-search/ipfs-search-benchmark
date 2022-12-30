@@ -5,7 +5,7 @@ import { scenario } from "k6/execution";
 
 const offset = __ENV.SCENARIO_OFFSET ? parseInt(__ENV.SCENARIO_OFFSET) : 0;
 
-const urlPrefix = "https://api.ipfs-search.com";
+const urlPrefix = "https://api.dwebsearch.org";
 const sleepAfter = 60;
 
 const visits = new SharedArray("visits", function () {
