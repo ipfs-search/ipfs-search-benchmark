@@ -24,8 +24,6 @@ const visits = new SharedArray("visits", function () {
 
 export const options = {
   vus: 400,
-  // TODO: Whitelist request limiting in frontend server
-  // rps: 200,
   thresholds: {
     checks: ["rate>0.9"],
     http_req_failed: ["rate<0.1"],
