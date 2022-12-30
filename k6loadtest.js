@@ -13,6 +13,10 @@ const visits = new SharedArray("visits", function () {
   // This way it will happen only once and the result will be shared between all VUs, saving time and memory.
   const f = JSON.parse(open("./visits.json"));
 
+  if (offset) {
+    console.log(`Using scenario offset of ${offset}.`);
+  }
+
   console.log("Read visits:", f.length);
 
   return f;
@@ -27,7 +31,7 @@ export const options = {
     http_req_failed: ["rate<0.1"],
     http_req_duration: ["p(90)<1000"],
   },
-  iterations: visits.length,
+  iterations: visits.length - offset,
   discardResponseBodies: true,
 };
 
