@@ -22,7 +22,7 @@ The extraction is known to work well to about 15k visits (including batched requ
 Please make sure you have a wide-enough pipe. Currently, this generates ~5 MB/s (~50 Mbit) of traffic.
 
 1. [Install k6](https://k6.io/docs/get-started/installation/)
-2. Extract visits file: `bunzip2 visits.json.bz2`
+2. Extract visits file: `bunzip2 -k visits.json.bz2`
 3. Run load tests: `k6 run k6loadtest.js`
 
 #### Offset to ensure cache' coldness
