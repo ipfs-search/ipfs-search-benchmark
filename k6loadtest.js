@@ -23,13 +23,16 @@ const visits = new SharedArray("visits", function () {
 });
 
 export const options = {
-  vus: 400,
+  stages: [
+    { duration: "5m", target: 1000 },
+    { duration: "2m", target: 1000 },
+    { duration: "5m", target: 0 },
+  ],
   thresholds: {
     checks: ["rate>0.9"],
     http_req_failed: ["rate<0.1"],
     http_req_duration: ["p(90)<1000"],
   },
-  iterations: visits.length - offset,
   discardResponseBodies: true,
 };
 
