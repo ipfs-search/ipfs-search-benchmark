@@ -2,7 +2,10 @@ import { SharedArray } from "k6/data";
 import { sleep, check } from "k6";
 import http from "k6/http";
 import { scenario } from "k6/execution";
-import { tagWithCurrentStageIndex } from "https://jslib.k6.io/k6-utils/1.3.0/index.js";
+import {
+  tagWithCurrentStageIndex,
+  tagWithCurrentStageProfile,
+} from "https://jslib.k6.io/k6-utils/1.3.0/index.js";
 
 const offset = __ENV.SCENARIO_OFFSET ? parseInt(__ENV.SCENARIO_OFFSET) : 0;
 
@@ -44,8 +47,6 @@ export const options = {
 };
 
 export default function () {
-  tagWithCurrentStageIndex();
-
   // Pick a new batch for every iteration.
   const visit = visits[scenario.iterationInTest + offset];
 
@@ -63,6 +64,9 @@ export default function () {
         },
       };
     });
+
+    tagWithCurrentStageIndex();
+    tagWithCurrentStageProfile();
 
     const responses = http.batch(requests);
 
