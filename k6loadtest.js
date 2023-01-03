@@ -2,6 +2,7 @@ import { SharedArray } from "k6/data";
 import { sleep, check } from "k6";
 import http from "k6/http";
 import { scenario } from "k6/execution";
+import { tagWithCurrentStageIndex } from "https://jslib.k6.io/k6-utils/1.3.0/index.js";
 
 const offset = __ENV.SCENARIO_OFFSET ? parseInt(__ENV.SCENARIO_OFFSET) : 0;
 
@@ -24,9 +25,15 @@ const visits = new SharedArray("visits", function () {
 
 export const options = {
   stages: [
-    { duration: "5m", target: 1000 },
-    { duration: "2m", target: 1000 },
-    { duration: "5m", target: 0 },
+    { duration: "5m", target: 1000 }, // Ramp up to 1000
+    { duration: "2m", target: 1000 }, // Stay for 2m at 1000
+    { duration: "5m", target: 2000 }, // Ramp up to 2000
+    { duration: "2m", target: 2000 }, // Stay for 2m at 2000
+    { duration: "5m", target: 3000 }, // Ramp up to 3000
+    { duration: "2m", target: 3000 }, // Stay for 2m at 3000
+    { duration: "5m", target: 4000 }, // Ramp up to 4000
+    { duration: "2m", target: 4000 }, // Stay for 2m at 4000
+    { duration: "5m", target: 0 }, // Ramp down to 0
   ],
   thresholds: {
     checks: ["rate>0.9"],
@@ -37,6 +44,8 @@ export const options = {
 };
 
 export default function () {
+  tagWithCurrentStageIndex();
+
   // Pick a new batch for every iteration.
   const visit = visits[scenario.iterationInTest + offset];
 
