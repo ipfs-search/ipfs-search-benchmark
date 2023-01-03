@@ -32,10 +32,10 @@ export const options = {
     { duration: "2m", target: 1000 }, // Stay for 2m at 1000
     { duration: "5m", target: 2000 }, // Ramp up to 2000
     { duration: "2m", target: 2000 }, // Stay for 2m at 2000
-    { duration: "5m", target: 3000 }, // Ramp up to 3000
-    { duration: "2m", target: 3000 }, // Stay for 2m at 3000
-    { duration: "5m", target: 4000 }, // Ramp up to 4000
-    { duration: "2m", target: 4000 }, // Stay for 2m at 4000
+    // { duration: "5m", target: 3000 }, // Ramp up to 3000
+    // { duration: "2m", target: 3000 }, // Stay for 2m at 3000
+    // { duration: "5m", target: 4000 }, // Ramp up to 4000
+    // { duration: "2m", target: 4000 }, // Stay for 2m at 4000
     { duration: "5m", target: 0 }, // Ramp down to 0
   ],
   thresholds: {
