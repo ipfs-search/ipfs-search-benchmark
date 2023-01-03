@@ -1,5 +1,5 @@
 import { SharedArray } from "k6/data";
-import { sleep, check } from "k6";
+import { sleep, check, test } from "k6";
 import http from "k6/http";
 import { scenario } from "k6/execution";
 import {
@@ -48,7 +48,14 @@ export const options = {
 
 export default function () {
   // Pick a new batch for every iteration.
-  const visit = visits[scenario.iterationInTest + offset];
+  const visitIteration = scenario.iterationInTest + offset;
+
+  // Abort test on out of bound condition.
+  if (visitIteration > visits.length - 1) {
+    test.abort("Out of visits for iteration.");
+  }
+
+  const visit = visits[visitIteration];
 
   for (const batch of visit) {
     sleep(batch.seconds_before);
