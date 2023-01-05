@@ -28,14 +28,16 @@ const visits = new SharedArray("visits", function () {
 
 export const options = {
   stages: [
+    { duration: "5m", target: 300 }, // Ramp up to 300
+    { duration: "2m", target: 300 }, // Stay for 2m at 300
+    { duration: "5m", target: 400 }, // Ramp up to 400
+    { duration: "2m", target: 400 }, // Stay for 2m at 400
     { duration: "5m", target: 1000 }, // Ramp up to 1000
     { duration: "2m", target: 1000 }, // Stay for 2m at 1000
     { duration: "5m", target: 2000 }, // Ramp up to 2000
     { duration: "2m", target: 2000 }, // Stay for 2m at 2000
     { duration: "5m", target: 3000 }, // Ramp up to 3000
     { duration: "2m", target: 3000 }, // Stay for 2m at 3000
-    { duration: "5m", target: 4000 }, // Ramp up to 4000
-    { duration: "2m", target: 4000 }, // Stay for 2m at 4000
     { duration: "5m", target: 0 }, // Ramp down to 0
   ],
   thresholds: {
