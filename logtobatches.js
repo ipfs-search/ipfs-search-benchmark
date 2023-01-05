@@ -70,7 +70,7 @@ function shouldIgnore(parsed) {
     return true;
   }
 
-  if (ignored_paths.some((path) => parsed.path.includes(path))) {
+  if (ignored_paths.some((path) => parsed.path && parsed.path.includes(path))) {
     // console.log(`Ignoring path ${parsed.path}`);
     return true;
   }
