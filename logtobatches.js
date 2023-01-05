@@ -21,13 +21,15 @@ async function parseLineToRemotes(line, remotes) {
     return;
   }
 
-  if (!(parsed.remote_addr in remotes)) {
-    // New remote, new visit
-    console.log(`Found ${Object.keys(remotes).length} remotes.`);
+  const rKey = parsed.remote_addr;
 
-    remotes[parsed.remote_addr] = [[parsed]];
+  if (!remotes.has(rKey)) {
+    // New remote, new visit
+    console.log(`Found ${remotes.size} remotes.`);
+
+    remotes.set(rKey, [[parsed]]);
   } else {
-    const visits = remotes[parsed.remote_addr];
+    const visits = remotes.get(rKey);
     const latest_visit = visits[visits.length - 1];
     const latest_request = latest_visit[latest_visit.length - 1];
     const time_since_latest_visit = Math.abs(
@@ -36,10 +38,10 @@ async function parseLineToRemotes(line, remotes) {
 
     if (time_since_latest_visit > visitDurationMillis) {
       console.log(`New visit from existing remote ${parsed.remote_addr}`);
-      remotes[parsed.remote_addr].push([parsed]);
+      visits.push([parsed]);
     } else {
       // Add request to last visit
-      remotes[parsed.remote_addr][visits.length - 1].push(parsed);
+      visits[visits.length - 1].push(parsed);
     }
   }
 }
@@ -52,7 +54,7 @@ async function getRemotes() {
     crlfDelay: Infinity,
   });
 
-  const remotes = {};
+  const remotes = new Map();
   for await (const line of rl) parseLineToRemotes(line, remotes);
 
   rl.close();
@@ -64,7 +66,7 @@ function getVisits(remotes) {
   // Pile remotes together, yielding just visits.
   const visits = [];
 
-  for (const [key, value] of Object.entries(remotes)) {
+  for (const [key, value] of remotes) {
     visits.push(...value);
   }
 
