@@ -9,6 +9,41 @@ const ignored_remotes = ["130.245.145.0", "148.71.182.0"]; // Skip known bots.
 const max_visit_steps = 256; // Reduce oversized batches; reduces crawlers.
 const dataFile = "visits.json";
 
+async function parseLineToRemotes(line, remotes) {
+  const parsed = parse(line);
+
+  // Filter out ignored stuff.
+  if (
+    ignored_paths.includes(parsed.path) ||
+    ignored_status.includes(parsed.status) ||
+    ignored_remotes.includes(parsed.remote_addr)
+  ) {
+    return;
+  }
+
+  if (!(parsed.remote_addr in remotes)) {
+    // New remote, new visit
+    console.log(`Found ${Object.keys(remotes).length} remotes.`);
+
+    remotes[parsed.remote_addr] = [[parsed]];
+  } else {
+    const visits = remotes[parsed.remote_addr];
+    const latest_visit = visits[visits.length - 1];
+    const latest_request = latest_visit[latest_visit.length - 1];
+    const time_since_latest_visit = Math.abs(
+      parsed.time_local - latest_request.time_local
+    );
+
+    if (time_since_latest_visit > visitDurationMillis) {
+      console.log(`New visit from existing remote ${parsed.remote_addr}`);
+      remotes[parsed.remote_addr].push([parsed]);
+    } else {
+      // Add request to last visit
+      remotes[parsed.remote_addr][visits.length - 1].push(parsed);
+    }
+  }
+}
+
 async function getRemotes() {
   console.log("Parsing log, sort remotes.");
 
@@ -18,42 +53,7 @@ async function getRemotes() {
   });
 
   const remotes = {};
-  var count = 0;
-  for await (const line of rl) {
-    const parsed = parse(line);
-
-    // Filter out ignored stuff.
-    if (
-      ignored_paths.includes(parsed.path) ||
-      ignored_status.includes(parsed.status) ||
-      ignored_remotes.includes(parsed.remote_addr)
-    ) {
-      continue;
-    }
-
-    if (!(parsed.remote_addr in remotes)) {
-      // New remote, new visit
-      count++;
-      console.log(`Found ${count} remotes.`);
-
-      remotes[parsed.remote_addr] = [[parsed]];
-    } else {
-      const visits = remotes[parsed.remote_addr];
-      const latest_visit = visits[visits.length - 1];
-      const latest_request = latest_visit[latest_visit.length - 1];
-      const time_since_latest_visit = Math.abs(
-        parsed.time_local - latest_request.time_local
-      );
-
-      if (time_since_latest_visit > visitDurationMillis) {
-        console.log(`New visit from existing remote ${parsed.remote_addr}`);
-        remotes[parsed.remote_addr].push([parsed]);
-      } else {
-        // Add request to existing visit
-        remotes[parsed.remote_addr][visits.length - 1].push(parsed);
-      }
-    }
-  }
+  for await (const line of rl) parseLineToRemotes(line, remotes);
 
   rl.close();
 
