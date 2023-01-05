@@ -13,9 +13,9 @@ Only required if you don't want to use the supplied `visits.json`.
 
 1. Install node deps: `npm i`
 2. Pipe log data to `logtobatches.js`: `cat access.log | node logtobatches.js`
-   Or, if (like us) you have a large body of gzipped log data: `gzcat access.log.*.gz | node`
+   Or, if (like us) you have a large body of gzipped log data: `gzcat access.log.*.gz | node logtobatches.js`
 
-The extraction is known to work well to about 15k visits (including batched requests).
+The extraction is known to work well to about 30k visits (including batched requests). For larger sets, it's recommended to increase Node's heap to 8G, like such: `NODE_OPTIONS=--max-old-space-size=8192 node logtobatches.js`.
 
 ### Running load tests
 
