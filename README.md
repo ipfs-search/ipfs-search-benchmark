@@ -30,6 +30,47 @@ Please make sure you have a wide-enough pipe. Currently, this generates ~5 MB/s 
 You can use the `SCENARIO_OFFSET` environment variable to prevent using the same traffic in repeated tests.
 For example, if a first test ran 1999 iterations, specify an offset like such: `SCENARIO_OFFSET=2000 k6 run k6loadtest.js`
 
+## Summary
+
+13/01/2013 pre scale-out
+400 VU: stable
+Ramp towards 1000 VU: req duration goes up
+Ramp towards 2000 VU: fail rate goes up
+
+## Tests from caminer
+
+3/1/'23
+
+#### 2000 VU
+
+Warm cache. 5m duration. RPS and server limits disabled.
+
+```
+running (5m30.0s), 0000/2000 VUs, 5129 complete and 1604 interrupted iterations
+default ✓ [======================================] 2000 VUs  5m0s
+
+     ✗ is status 200
+      ↳  79% — ✓ 173720 / ✗ 44841
+
+   ✗ checks.........................: 79.48% ✓ 173720     ✗ 44841
+     data_received..................: 516 MB 1.6 MB/s
+     data_sent......................: 35 MB  107 kB/s
+     http_req_blocked...............: avg=47.9ms  min=0s       med=250ns   max=21.83s   p(90)=400ns   p(95)=491ns
+     http_req_connecting............: avg=34.1ms  min=0s       med=0s      max=15.54s   p(90)=0s      p(95)=0s
+   ✓ http_req_duration..............: avg=1.25s   min=0s       med=1.54ms  max=1m0s     p(90)=7.31ms  p(95)=99.49ms
+       { expected_response:true }...: avg=8ms     min=320.42µs med=1.52ms  max=54.87s   p(90)=5.22ms  p(95)=7.86ms
+   ✗ http_req_failed................: 20.35% ✓ 45003      ✗ 176055
+     http_req_receiving.............: avg=48.46µs min=0s       med=22.25µs max=103.96ms p(90)=54.67µs p(95)=66.8µs
+     http_req_sending...............: avg=30.5µs  min=0s       med=26.5µs  max=17.16ms  p(90)=48.81µs p(95)=57.68µs
+     http_req_tls_handshaking.......: avg=12.72ms min=0s       med=0s      max=21.67s   p(90)=0s      p(95)=0s
+     http_req_waiting...............: avg=1.25s   min=0s       med=1.47ms  max=1m0s     p(90)=7.18ms  p(95)=99.4ms
+     http_reqs......................: 221058 669.854297/s
+     iteration_duration.............: avg=1m11s   min=27.92ms  med=50.11s  max=5m26s    p(90)=2m55s   p(95)=3m52s
+     iterations.....................: 5129   15.541997/s
+     vus............................: 1606   min=1606     max=2000
+     vus_max........................: 2000   min=2000     max=2000
+```
+
 ## Preliminary results
 
 ### 10m, cold cache, data form 12/12/'22
