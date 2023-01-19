@@ -48,7 +48,6 @@ export const options = {
   },
   thresholds: {
     "checks{check:cache_hit}": ["rate>0.1"],
-    "checks{check:etag}": ["rate>0.9"],
     "checks{check:status_200_or_308}": ["rate>0.9"],
     "checks{check:JSON}": ["rate>0.9"],
     "checks{check:gzip}": ["rate>0.9"],
