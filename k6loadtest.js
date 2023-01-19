@@ -1,11 +1,12 @@
 import { SharedArray } from "k6/data";
-import { sleep, check, test } from "k6";
+import { sleep, check } from "k6";
 import http from "k6/http";
-import { scenario } from "k6/execution";
+import { exec, scenario } from "k6/execution";
 import {
   tagWithCurrentStageIndex,
   tagWithCurrentStageProfile,
 } from "https://jslib.k6.io/k6-utils/1.3.0/index.js";
+import { URL } from "https://jslib.k6.io/url/1.0.0/index.js";
 
 const offset = __ENV.SCENARIO_OFFSET ? parseInt(__ENV.SCENARIO_OFFSET) : 0;
 
@@ -46,12 +47,36 @@ export const options = {
     },
   },
   thresholds: {
-    checks: ["rate>0.9"],
+    "checks{check:cache_hit}": ["rate>0.1"],
+    "checks{check:etag}": ["rate>0.9"],
+    "checks{check:status_200_or_308}": ["rate>0.9"],
+    "checks{check:JSON}": ["rate>0.9"],
+    "checks{check:gzip}": ["rate>0.9"],
+    "checks{check:etag}": ["rate>0.9"],
+    "checks{check:cache_headers}": ["rate>0.9"],
     http_req_failed: ["rate<0.1"],
     http_req_duration: ["p(90)<1000"],
   },
   discardResponseBodies: true,
 };
+
+function getNameFromURL(url) {
+  try {
+    const urlObj = new URL(url);
+    const pathSplit = urlObj.pathname.split("/");
+
+    if (pathSplit.length < 3) throw new Error("Less than 3 elements in path.");
+    return pathSplit[2];
+  } catch (e) {
+    console.error("Error getting name from URL:", e);
+    return "";
+  }
+}
+
+function getURLFromPath(path) {
+  if (!path) throw new Error("Empty path");
+  return urlPrefix + path;
+}
 
 export default function () {
   // Pick a new batch for every iteration.
@@ -59,38 +84,61 @@ export default function () {
 
   // Abort test on out of bound condition.
   if (visitIteration > visits.length - 1) {
-    test.abort("Out of visits for iteration.");
+    exec.test.abort("Out of visits for iteration.");
   }
 
   const visit = visits[visitIteration];
 
   for (const batch of visit) {
-    sleep(batch.seconds_before);
+    const requests = batch.paths
+      .filter((p) => p) // Filter empty paths.
+      .map(function (path) {
+        const url = getURLFromPath(path);
 
-    const requests = batch.paths.map(function (path) {
-      return {
-        method: "GET",
-        url: urlPrefix + path,
-        params: {
-          tags: {
-            name: path.split("/")[2].split("?")[0],
+        return {
+          method: "GET",
+          url: url,
+          params: {
+            tags: {
+              name: getNameFromURL(url),
+            },
+            headers: {
+              "Accept-Encoding": "gzip",
+            },
           },
-          headers: {
-            "Accept-Encoding": "gzip",
-          },
-        },
-      };
-    });
+        };
+      });
 
     tagWithCurrentStageIndex();
     tagWithCurrentStageProfile();
 
+    sleep(batch.seconds_before);
+
     const responses = http.batch(requests);
 
     for (const response of responses) {
-      check(response, {
-        "is status 200": (r) => r.status === 200,
-      });
+      check(
+        response,
+        {
+          cache_hit: (r) =>
+            "X-Cache-Status" in r.headers &&
+            r.headers["X-Cache-Status"] === "HIT",
+          status_200_or_308: (r) => r.status === 200 || r.status === 308,
+          JSON: (r) =>
+            "Content-Type" in r.headers &&
+            r.headers["Content-Type"] === "application/json; charset=utf-8",
+          gzip: (r) =>
+            "Content-Encoding" in r.headers &&
+            r.headers["Content-Encoding"] === "gzip",
+          cache_headers: (r) =>
+            "Cache-Control" in r.headers &&
+            "Expires" in r.headers &&
+            "Etag" in r.headers,
+        },
+        {
+          name: getNameFromURL(response.request.url),
+        }
+      );
     }
   }
 
