@@ -31,15 +31,13 @@ export const options = {
   scenarios: {
     ramp_vus: {
       executor: "ramping-vus",
-      startVUs: 1600,
+      startVUs: 2800,
       stages: [
-        { duration: "2m", target: 1600 },
-        { duration: "4m", target: 2000 },
-        { duration: "2m", target: 2000 },
-        { duration: "4m", target: 2400 },
-        { duration: "2m", target: 2400 },
         { duration: "4m", target: 2800 },
-        { duration: "2m", target: 2800 },
+        { duration: "4m", target: 3200 },
+        { duration: "2m", target: 3200 },
+        { duration: "4m", target: 3600 },
+        { duration: "2m", target: 3600 },
       ],
     },
   },
